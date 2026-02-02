@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Claude Code Terminal Meme</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap");
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "JetBrains Mono", "Courier New", monospace;
+        background-color: #0a0a0a;
+        color: #00ff00;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      /* Terminal header */
+      #terminal-header {
+        background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
+        padding: 8px 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border-bottom: 1px solid #333;
+      }
+
+      .window-button {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+      }
+
+      .window-button.close {
+        background-color: #ff5f56;
+      }
+      .window-button.minimize {
+        background-color: #ffbd2e;
+      }
+      .window-button.maximize {
+        background-color: #27c93f;
+      }
+
+      #terminal-title {
+        color: #999;
+        font-size: 12px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      #chat-container {
+        flex: 1;
+        overflow-y: auto;
+        padding: 40px 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0;
+        background-color: #0a0a0a;
+      }
+
+      .message-group {
+        width: 100%;
+        max-width: 900px;
+        margin-bottom: 20px;
+      }
+
+      .message-header {
+        color: #666;
+        font-size: 12px;
+        margin-bottom: 8px;
+        font-weight: 500;
+      }
+
+      .message-header.user {
+        color: #5b9bd5;
+      }
+
+      .message-header.claude {
+        color: #d4a373;
+      }
+
+      .message-content {
+        padding: 12px 16px;
+        border-left: 3px solid #333;
+        margin-left: 0;
+        line-height: 1.6;
+        font-size: 14px;
+        color: #d4d4d4;
+        background-color: #0d0d0d;
+        border-radius: 0 4px 4px 0;
+      }
+
+      .message-content.user {
+        border-left-color: #5b9bd5;
+        color: #e0e0e0;
+      }
+
+      .message-content.claude {
+        border-left-color: #d4a373;
+        color: #c9c9c9;
+      }
+
+      /* Prompt line at bottom */
+      #input-container {
+        background-color: #0a0a0a;
+        border-top: 1px solid #1a1a1a;
+        padding: 12px 20px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+      }
+
+      .prompt-symbol {
+        color: #00ff00;
+        font-weight: bold;
+      }
+
+      #question {
+        flex: 1;
+        background: transparent;
+        border: none;
+        color: #d4d4d4;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 14px;
+        outline: none;
+        padding: 4px;
+      }
+
+      #question::placeholder {
+        color: #555;
+      }
+
+      button {
+        padding: 6px 12px;
+        border: 1px solid #333;
+        border-radius: 3px;
+        background-color: #1a1a1a;
+        color: #999;
+        cursor: pointer;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        transition: all 0.2s;
+      }
+
+      button:hover {
+        background-color: #2a2a2a;
+        border-color: #444;
+        color: #ddd;
+      }
+
+      /* Modal styles */
+      #modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.95);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+      }
+
+      #modal.active {
+        display: flex;
+      }
+
+      #modal-content {
+        background-color: #1a1a1a;
+        padding: 30px;
+        border-radius: 8px;
+        border: 1px solid #333;
+        max-width: 95%;
+        max-height: 95%;
+        overflow: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        align-items: center;
+      }
+
+      #generated-image {
+        max-width: 100%;
+        border-radius: 4px;
+        border: 1px solid #333;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.6);
+      }
+
+      #social-buttons {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .social-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        border-radius: 4px;
+        font-weight: 500;
+        cursor: pointer;
+        border: none;
+        color: white;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        transition:
+          transform 0.2s,
+          opacity 0.2s;
+      }
+
+      .social-btn:hover {
+        opacity: 0.85;
+        transform: translateY(-1px);
+      }
+
+      .social-btn.twitter {
+        background-color: #1da1f2;
+      }
+
+      .social-btn.linkedin {
+        background-color: #0077b5;
+      }
+
+      .social-btn.download {
+        background-color: #10b981;
+      }
+
+      #close-modal {
+        background-color: #dc2626;
+        color: white;
+        align-self: flex-end;
+        border: 1px solid #991b1b;
+      }
+
+      #close-modal:hover {
+        background-color: #b91c1c;
+      }
+
+      #image-canvas {
+        display: none;
+      }
+
+      #chat-container::-webkit-scrollbar {
+        width: 10px;
+      }
+
+      #chat-container::-webkit-scrollbar-track {
+        background: #0a0a0a;
+      }
+
+      #chat-container::-webkit-scrollbar-thumb {
+        background: #333;
+        border-radius: 5px;
+      }
+
+      #chat-container::-webkit-scrollbar-thumb:hover {
+        background: #444;
+      }
+
+      .cursor {
+        display: inline-block;
+        width: 8px;
+        height: 16px;
+        background-color: #00ff00;
+        animation: blink 1s infinite;
+        margin-left: 2px;
+      }
+
+      @keyframes blink {
+        0%,
+        50% {
+          opacity: 1;
+        }
+        51%,
+        100% {
+          opacity: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Terminal header -->
+    <div id="terminal-header">
+      <span class="window-button close"></span>
+      <span class="window-button minimize"></span>
+      <span class="window-button maximize"></span>
+      <span id="terminal-title">claude-code — terminal</span>
+    </div>
+
+    <!-- Chat area -->
+    <div id="chat-container"></div>
+
+    <!-- Input prompt -->
+    <div id="input-container">
+      <span class="prompt-symbol">❯</span>
+      <input type="text" id="question" placeholder="Type your message..." />
+      <button id="ask-btn">Send</button>
+      <button id="share-btn">Generate</button>
+    </div>
+
+    <!-- Modal for sharing -->
+    <div id="modal">
+      <div id="modal-content">
+        <button id="close-modal">✕ Close</button>
+        <img id="generated-image" alt="Generated terminal screenshot" />
+        <div id="social-buttons">
+          <button class="social-btn twitter" id="twitter-btn">
+            <span>𝕏</span> Share on X/Twitter
+          </button>
+          <button class="social-btn linkedin" id="linkedin-btn">
+            <span>in</span> Share on LinkedIn
+          </button>
+          <button class="social-btn download" id="download-btn">
+            <span>↓</span> Download Image
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <canvas id="image-canvas"></canvas>
+
+    <script>
+      const chatContainer = document.getElementById("chat-container");
+      const questionInput = document.getElementById("question");
+      const askBtn = document.getElementById("ask-btn");
+      const shareBtn = document.getElementById("share-btn");
+      const modal = document.getElementById("modal");
+      const closeModal = document.getElementById("close-modal");
+      const generatedImage = document.getElementById("generated-image");
+      const canvas = document.getElementById("image-canvas");
+      const ctx = canvas.getContext("2d");
+
+      const responses = [
+        "Come on man… you can figure this out. Just try it yourself.",
+        "Come on man. Just try it yourself.",
+        "Come on… man. Think for yourself.",
+        "You got this. Just figure it out yourself.",
+      ];
+
+      let conversationHistory = [];
+
+      function addMessage(text, sender) {
+        const messageGroup = document.createElement("div");
+        messageGroup.classList.add("message-group");
+
+        const header = document.createElement("div");
+        header.classList.add("message-header", sender);
+        header.textContent = sender === "user" ? "You" : "Claude";
+
+        const content = document.createElement("div");
+        content.classList.add("message-content", sender);
+        content.textContent = text;
+
+        messageGroup.appendChild(header);
+        messageGroup.appendChild(content);
+        chatContainer.appendChild(messageGroup);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+
+        conversationHistory.push({ text, sender });
+      }
+
+      function generateResponse() {
+        const question = questionInput.value.trim();
+        if (!question) return;
+
+        addMessage(question, "user");
+
+        const thinking = document.createElement("div");
+        thinking.classList.add("message-group");
+        const thinkingHeader = document.createElement("div");
+        thinkingHeader.classList.add("message-header", "claude");
+        thinkingHeader.textContent = "Claude";
+        const thinkingContent = document.createElement("div");
+        thinkingContent.classList.add("message-content", "claude");
+        thinkingContent.innerHTML = 'Thinking<span class="cursor"></span>';
+        thinking.appendChild(thinkingHeader);
+        thinking.appendChild(thinkingContent);
+        chatContainer.appendChild(thinking);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+
+        setTimeout(() => {
+          thinking.remove();
+          const response =
+            responses[Math.floor(Math.random() * responses.length)];
+          addMessage(response, "claude");
+        }, 1200);
+
+        questionInput.value = "";
+        questionInput.focus();
+      }
+
+      function wrapText(ctx, text, maxWidth) {
+        const words = text.split(" ");
+        const lines = [];
+        let currentLine = "";
+
+        for (let word of words) {
+          const testLine = currentLine + (currentLine ? " " : "") + word;
+          const metrics = ctx.measureText(testLine);
+
+          if (metrics.width > maxWidth && currentLine) {
+            lines.push(currentLine);
+            currentLine = word;
+          } else {
+            currentLine = testLine;
+          }
+        }
+        if (currentLine) lines.push(currentLine);
+        return lines;
+      }
+
+      function generateImage() {
+        if (conversationHistory.length === 0) {
+          alert("Have a conversation first!");
+          return;
+        }
+
+        const lastMessages = conversationHistory.slice(-2);
+        if (lastMessages.length < 2) {
+          alert("Need at least one complete exchange!");
+          return;
+        }
+
+        const userMsg = lastMessages[0];
+        const claudeMsg = lastMessages[1];
+
+        // Canvas setup
+        canvas.width = 1200;
+        const padding = 60;
+        const lineHeight = 28;
+        const headerHeight = 40;
+        const fontSize = 18;
+        const headerFontSize = 16;
+        const maxTextWidth = 1000;
+        const messageSpacing = 30;
+        const contentPadding = 20;
+
+        ctx.font = `${fontSize}px 'JetBrains Mono', monospace`;
+
+        const userLines = wrapText(ctx, userMsg.text, maxTextWidth);
+        const claudeLines = wrapText(ctx, claudeMsg.text, maxTextWidth);
+
+        const userBlockHeight =
+          headerHeight + userLines.length * lineHeight + contentPadding * 2;
+        const claudeBlockHeight =
+          headerHeight + claudeLines.length * lineHeight + contentPadding * 2;
+
+        canvas.height =
+          padding * 2 +
+          userBlockHeight +
+          messageSpacing +
+          claudeBlockHeight +
+          80;
+
+        // Background
+        ctx.fillStyle = "#0a0a0a";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw terminal header bar
+        const gradient = ctx.createLinearGradient(0, 0, 0, 40);
+        gradient.addColorStop(0, "#2a2a2a");
+        gradient.addColorStop(1, "#1a1a1a");
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, 40);
+
+        // Window buttons
+        ctx.fillStyle = "#ff5f56";
+        ctx.beginPath();
+        ctx.arc(20, 20, 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#ffbd2e";
+        ctx.beginPath();
+        ctx.arc(40, 20, 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#27c93f";
+        ctx.beginPath();
+        ctx.arc(60, 20, 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Terminal title
+        ctx.fillStyle = "#999";
+        ctx.font = `${14}px 'JetBrains Mono', monospace`;
+        ctx.textAlign = "center";
+        ctx.fillText("claude-code — terminal", canvas.width / 2, 25);
+        ctx.textAlign = "left";
+
+        let currentY = padding + 60;
+
+        // User message
+        ctx.fillStyle = "#5b9bd5";
+        ctx.font = `500 ${headerFontSize}px 'JetBrains Mono', monospace`;
+        ctx.fillText("You", padding, currentY);
+
+        currentY += headerHeight;
+
+        // User message background
+        ctx.fillStyle = "#0d0d0d";
+        ctx.fillRect(
+          padding,
+          currentY - contentPadding,
+          canvas.width - padding * 2,
+          userLines.length * lineHeight + contentPadding * 2,
+        );
+
+        // User message border
+        ctx.strokeStyle = "#5b9bd5";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(padding, currentY - contentPadding);
+        ctx.lineTo(
+          padding,
+          currentY -
+            contentPadding +
+            userLines.length * lineHeight +
+            contentPadding * 2,
+        );
+        ctx.stroke();
+
+        ctx.fillStyle = "#e0e0e0";
+        ctx.font = `${fontSize}px 'JetBrains Mono', monospace`;
+        userLines.forEach((line, i) => {
+          ctx.fillText(line, padding + 20, currentY + i * lineHeight + 5);
+        });
+
+        currentY +=
+          userLines.length * lineHeight + contentPadding * 2 + messageSpacing;
+
+        // Claude message
+        ctx.fillStyle = "#d4a373";
+        ctx.font = `500 ${headerFontSize}px 'JetBrains Mono', monospace`;
+        ctx.fillText("Claude", padding, currentY);
+
+        currentY += headerHeight;
+
+        // Claude message background
+        ctx.fillStyle = "#0d0d0d";
+        ctx.fillRect(
+          padding,
+          currentY - contentPadding,
+          canvas.width - padding * 2,
+          claudeLines.length * lineHeight + contentPadding * 2,
+        );
+
+        // Claude message border
+        ctx.strokeStyle = "#d4a373";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(padding, currentY - contentPadding);
+        ctx.lineTo(
+          padding,
+          currentY -
+            contentPadding +
+            claudeLines.length * lineHeight +
+            contentPadding * 2,
+        );
+        ctx.stroke();
+
+        ctx.fillStyle = "#c9c9c9";
+        ctx.font = `${fontSize}px 'JetBrains Mono', monospace`;
+        claudeLines.forEach((line, i) => {
+          ctx.fillText(line, padding + 20, currentY + i * lineHeight + 5);
+        });
+
+        // Convert to image
+        generatedImage.src = canvas.toDataURL("image/png");
+        modal.classList.add("active");
+      }
+
+      function downloadImage() {
+        const link = document.createElement("a");
+        link.download = "claude-terminal-meme.png";
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      }
+
+      function shareToTwitter() {
+        downloadImage();
+        const text = "Check out this Claude Code conversation! 🤖";
+        const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+        window.open(url, "_blank");
+        alert("Image downloaded! Upload it to your tweet.");
+      }
+
+      function shareToLinkedIn() {
+        downloadImage();
+        window.open("https://www.linkedin.com/feed/", "_blank");
+        alert("Image downloaded! Upload it to your LinkedIn post.");
+      }
+
+      askBtn.addEventListener("click", generateResponse);
+      questionInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") generateResponse();
+      });
+      shareBtn.addEventListener("click", generateImage);
+      closeModal.addEventListener("click", () => {
+        modal.classList.remove("active");
+      });
+      document
+        .getElementById("download-btn")
+        .addEventListener("click", downloadImage);
+      document
+        .getElementById("twitter-btn")
+        .addEventListener("click", shareToTwitter);
+      document
+        .getElementById("linkedin-btn")
+        .addEventListener("click", shareToLinkedIn);
+
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) {
+          modal.classList.remove("active");
+        }
+      });
+    </script>
+  </body>
+</html>
